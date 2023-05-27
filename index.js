@@ -2,8 +2,6 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const app = express();
-const { asyncTryCatch } = require('./middleware');
-const { ctrl } = require('./controllers');
 
 const PORT = process.env.PORT || 80;
 
@@ -13,8 +11,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// app.use('/api/superheroes', superherosRouter);
-app.get('/', asyncTryCatch(ctrl.getAll));
+app.use('/api/superheroes', superherosRouter);
 // app.get('/', (req, res) => {
 //   res.end(`
 //     <div>
