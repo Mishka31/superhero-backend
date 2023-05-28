@@ -1,13 +1,25 @@
-const { NotFound } = require('http-errors')
-const { Superhero } = require('../../model')
+// const { NotFound } = require('http-errors');
+// const { Superhero } = require('../../model');
+const { db } = require('../../firebase/config');
 
 const deleteById = async (req, res) => {
-  const { id } = req.params
-  const result = await Superhero.findByIdAndRemove(id)
-  if (!result) {
-    throw new NotFound(`Not found id = ${id}`)
-  }
-  res.json({ status: 'succes', code: 200, message: 'contact deleted' })
-}
+  const { id } = req.query;
+  console.log(id);
+  try {
+    const docRef = db.collection('superheroes').doc(id);
+    const doc = await docRef.get();
 
-module.exports = deleteById
+    if (!doc.exists) {
+      return res.status(404).json({ message: 'Superhero not found' });
+    }
+
+    await docRef.delete();
+
+    res.json({ message: 'Superhero deleted' });
+  } catch (error) {
+    console.error('Failed to delete superhero:', error);
+    res.status(500).json({ message: 'Failed to delete superhero' });
+  }
+};
+
+module.exports = deleteById;
