@@ -15,7 +15,6 @@ const getById = async (req, res) => {
     };
     res.json({ message: 'Superhero found', data: superhero });
   } catch (error) {
-    console.error('Error fetching superhero from Firestore:', error);
     res.status(500).json({ message: 'Failed to fetch superhero' });
   }
 };

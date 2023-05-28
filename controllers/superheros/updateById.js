@@ -1,35 +1,62 @@
-const { NotFound } = require('http-errors')
-const { Superhero } = require('../../model')
-const fs = require('fs/promises')
-const path = require('path')
+const { db } = require('../../firebase/config');
+const { bucket } = require('../../firebase/config');
+// const { NotFound } = require('http-errors');
+// const { Superhero } = require('../../model');
+// const fs = require('fs/promises');
+// const path = require('path');
 
-const pathAvatars = path.join(__dirname, '../../public/images')
+// const pathAvatars = path.join(__dirname, '../../public/images');
 
 const updateById = async (req, res) => {
-  const { id } = req.params
+  const { id, nickName, realName, description, superpowers, catchPhrase } = req.body;
 
-  if (!req.file) {
-    const result = await Superhero.findByIdAndUpdate(id, req.body, {
-      new: true,
-    })
-    if (!result) {
-      throw new NotFound(`Not found id = ${id}`)
+  try {
+    const docRef = db.collection('superheroes').doc(id);
+    const doc = await docRef.get();
+
+    if (!doc.exists) {
+      return res.status(404).json({ message: 'Superhero not found' });
     }
-    res.status(200).json({ status: 'succes', code: 200, data: { result } })
-  }
-  const { path: tempPath, originalname } = req.file
-  const resultDir = path.join(pathAvatars, originalname)
-  await fs.rename(tempPath, resultDir)
-  const imageUrl = path.join('/images', originalname)
-  const updateHero = { ...req.body, imageUrl }
+    const imageUrl = await uploadFileToFirebase(req.file);
+    console.log(imageUrl);
+    if (imageUrl) {
+      await docRef.update({ ...req.body, heroImage: imageUrl });
+    }
+    await docRef.update(req.body);
+    const updatedDoc = await docRef.get();
+    const updatedSuperhero = {
+      id: updatedDoc.id,
+      ...updatedDoc.data(),
+    };
 
-  const result = await Superhero.findByIdAndUpdate(id, updateHero, {
-    new: true,
-  })
-  if (!result) {
-    throw new NotFound(`Not found id = ${id}`)
+    res.json({ message: 'Superhero updated', data: updatedSuperhero });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update superhero' });
   }
-  res.status(200).json({ status: 'succes', code: 200, data: { result } })
-}
+};
 
-module.exports = updateById
+const uploadFileToFirebase = async (file) => {
+  if (!file) return;
+  try {
+    const { path, originalname } = file;
+    const destination = `images/${originalname}`;
+    await bucket.upload(path, {
+      destination,
+      metadata: {
+        contentType: 'image/jpeg',
+      },
+    });
+
+    const [uploadedFile] = await bucket.file(destination).get();
+
+    const imageUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(
+      destination
+    )}?alt=media&token=${encodeURIComponent(uploadedFile.metadata.mediaLink.split('&token=')[1])}`;
+
+    return imageUrl;
+  } catch (error) {
+    throw new Error('Erro upload to Firebase: ' + error.message);
+  }
+};
+
+module.exports = updateById;
