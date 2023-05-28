@@ -8,7 +8,7 @@ const { bucket } = require('../../firebase/config');
 // const pathAvatars = path.join(__dirname, '../../public/images');
 
 const updateById = async (req, res) => {
-  const { id, nickName, realName, description, superpowers, catchPhrase } = req.body;
+  const { id } = req.body;
 
   try {
     const docRef = db.collection('superheroes').doc(id);
@@ -18,7 +18,6 @@ const updateById = async (req, res) => {
       return res.status(404).json({ message: 'Superhero not found' });
     }
     const imageUrl = await uploadFileToFirebase(req.file);
-    console.log(imageUrl);
     if (imageUrl) {
       await docRef.update({ ...req.body, heroImage: imageUrl });
     }

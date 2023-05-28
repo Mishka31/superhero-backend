@@ -1,19 +1,61 @@
-// const { Superhero } = require('../../model');
+const { db } = require('../../firebase/config');
 const { bucket } = require('../../firebase/config');
+// const { NotFound } = require('http-errors');
+// const { Superhero } = require('../../model');
+// const fs = require('fs/promises');
+// const path = require('path');
 
-const addSuperhero = async (req, res) => {
+// const pathAvatars = path.join(__dirname, '../../public/images');
+
+const updateById = async (req, res) => {
   try {
-    await uploadFileToFirebase(req.file);
+    // const docRef = db.collection('superheroes').doc(id);
+    // const doc = await docRef.get();
 
-    res.status(201).json({ status: 'Success saved file', code: 201, data: req.file });
+    // if (!doc.exists) {
+    //   return res.status(404).json({ message: 'Superhero not found' });
+    // }
+
+    const imageUrl = await uploadFileToFirebase(req.file);
+
+    const superheroData = {
+      ...req.body,
+      ...(imageUrl && { heroImage: imageUrl }),
+    };
+
+    const docRef = await db.collection('superheroes').add(superheroData);
+    const docId = docRef.id;
+    superheroData.id = docId;
+
+    await docRef.update(superheroData);
+    const doc = await docRef.get();
+
+    const createdSuperhero = {
+      id: docRef.id,
+      ...doc.data(),
+    };
+
+    res.status(201).json({ message: 'Superhero created', data: createdSuperhero });
+    // if (imageUrl) {
+    //   await docRef.update({ ...req.body, heroImage: imageUrl });
+    // }
+    // await docRef.update(req.body);
+    // const updatedDoc = await docRef.get();
+    // const updatedSuperhero = {
+    //   id: updatedDoc.id,
+    //   ...updatedDoc.data(),
+    // };
+
+    // res.json({ message: 'Superhero updated', data: updatedSuperhero });
   } catch (error) {
-    res.status(500).json({ status: 'Error', code: 500, message: 'Failed to upload file' });
+    res.status(500).json({ message: 'Failed to update superhero' });
   }
 };
 
 const uploadFileToFirebase = async (file) => {
-  const { path, originalname } = file;
+  if (!file) return;
   try {
+    const { path, originalname } = file;
     const destination = `images/${originalname}`;
     await bucket.upload(path, {
       destination,
@@ -28,10 +70,10 @@ const uploadFileToFirebase = async (file) => {
       destination
     )}?alt=media&token=${encodeURIComponent(uploadedFile.metadata.mediaLink.split('&token=')[1])}`;
 
-    console.log('Success add to Firebase:', imageUrl);
+    return imageUrl;
   } catch (error) {
     throw new Error('Erro upload to Firebase: ' + error.message);
   }
 };
 
-module.exports = addSuperhero;
+module.exports = updateById;
