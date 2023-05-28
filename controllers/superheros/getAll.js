@@ -8,7 +8,11 @@ const getAll = async (req, res) => {
     const pageNumber = parseInt(page);
 
     let snapshot;
+    let totalItems;
     if (limitNumber && pageNumber) {
+      const querySnapshot = await db.collection('superheroes').orderBy('nickName', 'asc').get();
+      totalItems = querySnapshot.size;
+
       snapshot = await db
         .collection('superheroes')
         .orderBy('nickName', 'asc')
@@ -35,6 +39,7 @@ const getAll = async (req, res) => {
       data: superheroes,
       page: pageNumber,
       limit: limitNumber,
+      totalItems,
     });
   } catch (error) {
     res.status(500).json({ status: 'Error', code: 500, message: 'Failed to get heroes' });
