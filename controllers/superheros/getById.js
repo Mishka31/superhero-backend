@@ -7,7 +7,7 @@ const getById = async (req, res) => {
     if (!doc.exists) {
       return res.status(404).json({ message: 'Superhero not found' });
     }
-
+    // console.log('');
     const superheroData = doc.data();
     const superhero = {
       id: doc.id,
