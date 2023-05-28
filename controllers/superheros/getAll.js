@@ -7,7 +7,12 @@ const getAll = async (_, res) => {
 
     const superheroes = [];
     snapshot.forEach((doc) => {
-      superheroes.push(doc.data());
+      const superheroData = doc.data();
+      const superhero = {
+        id: doc.id,
+        ...superheroData,
+      };
+      superheroes.push(superhero);
     });
 
     res.json({ message: 'Get all heroes', code: 200, data: superheroes });
