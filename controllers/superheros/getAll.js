@@ -1,9 +1,23 @@
 // const { Superhero } = require('../../model');
 const { db } = require('../../firebase/config');
 
-const getAll = async (_, res) => {
+const getAll = async (req, res) => {
   try {
-    const snapshot = await db.collection('superheroes').get();
+    const { limit = 10, page = 1 } = req.query;
+    const limitNumber = parseInt(limit);
+    const pageNumber = parseInt(page);
+
+    let snapshot;
+    if (limitNumber && pageNumber) {
+      snapshot = await db
+        .collection('superheroes')
+        .orderBy('nickName', 'asc')
+        .limit(limitNumber)
+        .offset((pageNumber - 1) * limitNumber)
+        .get();
+    } else {
+      snapshot = await db.collection('superheroes').orderBy('nickName', 'asc').get();
+    }
 
     const superheroes = [];
     snapshot.forEach((doc) => {
@@ -15,7 +29,13 @@ const getAll = async (_, res) => {
       superheroes.push(superhero);
     });
 
-    res.json({ message: 'Get all heroes', code: 200, data: superheroes });
+    res.json({
+      message: 'Get all heroes',
+      code: 200,
+      data: superheroes,
+      page: pageNumber,
+      limit: limitNumber,
+    });
   } catch (error) {
     res.status(500).json({ status: 'Error', code: 500, message: 'Failed to get heroes' });
   }
