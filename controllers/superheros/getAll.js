@@ -1,4 +1,4 @@
-const { Superhero } = require('../../model');
+// const { Superhero } = require('../../model');
 const { db } = require('../../firebase/config');
 
 const getAll = async (_, res) => {
